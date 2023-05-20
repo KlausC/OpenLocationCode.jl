@@ -319,7 +319,8 @@ function decode(code::AbstractString)
     # Strip out separator character (we've already established the code is
     # valid so the maximum is one), and padding characters. Convert to upper
     # case and constrain to the maximum number of digits.
-    code = uppercase(prod(match(r"([^0+]*)[0]*[+]?(.*)", code)))
+    m = match(r"([^0+]*)[0]*[+]?(.*)", code)
+    code = uppercase(m[1] * m[2])
     if length(code) > MAX_DIGIT_COUNT_
         code = code[1:MAX_DIGIT_COUNT_]
     end
