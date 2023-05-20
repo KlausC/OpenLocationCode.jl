@@ -43,11 +43,14 @@ julia> # Decode a full code:
        code = "8FVCCJ8F+6X"
 "8FVCCJ8F+6X"
 
-julia> coord = decode(code)
+julia> ca = decode(code)
 CodeArea{Float64}(47.4155, 8.624875, 10)
 
-julia> println("Center is lat=$(latitude_center(coord)), lon=$(longitude_center(coord))")
-Center is lat=47.4155625, lon=8.6249375
+julia> println("# Center is lat=$(latitude_center(ca)), lon=$(longitude_center(ca))")
+# Center is lat=47.4155625, lon=8.6249375
+
+julia> println("# extension of area is $(latitude_precision(ca) * 111321)x$(longitude_precision(ca) * 111321 * cosd(latitude_low(ca))) m")
+# extension of area is 13.915125x9.416042416499675 m
 
 julia> # Attempt to trim the first characters from a code:
        shorten("8FVC9G8F+6X", 47.5, 8.5)
