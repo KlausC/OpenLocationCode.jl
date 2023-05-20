@@ -214,17 +214,24 @@ end
 Encode a location into an Open Location Code.
 Produces a code of the specified length, or the default length if no length
 is provided.
+
 The length determines the accuracy of the code. The default length is
-10 characters, returning a code of approximately 13.5x13.5 meters. Longer
-codes represent smaller areas, but lengths > 14 are sub-centimetre and so
+10 characters, returning a code of approximately 13.9x13.9 meters. Longer
+codes represent smaller areas, but lengths > 15 are sub-centimetre and so
 11 or 12 are probably the limit of useful codes.
-Args:
-  latitude: A latitude in signed decimal degrees. Will be clipped to the
-      range -90 to 90.
-  longitude: A longitude in signed decimal degrees. Will be normalised to
-      the range -180 to 180.
-  codelength: The number of significant digits in the output code, not
-      including any separator characters.
+
+# Arguments
+- `latitude`: A latitude in signed degrees. Will be clipped to the range -90 to 90.
+- `longitude`: A longitude in signed degrees. Will be normalised to
+    the range -180 to 180.
+- `codelength`: The number of significant digits in the output code, not
+    including any separator characters.
+
+# Examples:
+```julia
+julia> encode(50.173168, 8.338086, 11)
+"9F2C58FQ+768"
+```
 """
 function encode(latitude::Real, longitude::Real, codelength=PAIR_CODE_LENGTH_)
     encode(float.(promote(latitude, longitude))..., codelength)
@@ -302,12 +309,12 @@ end
     decode(code)
 
 Decode an Open Location Code into the location coordinates.
-Returns a CodeArea object that includes the coordinates of the bounding
-box - the lower left, center and upper right.
-Args:
-  code: The Open Location Code to decode.
-Returns:
-  A CodeArea object that provides the latitude and longitude of two of the
+
+# Arguments:
+- `code`: The Open Location Code to decode.
+
+# Returns:
+  A `CodeArea` object that provides the latitude and longitude of two of the
   corners of the area, the center, and the length of the original code.
 """
 function decode(code::AbstractString)
@@ -384,13 +391,15 @@ end
 Recover the nearest matching code to a specified location.
 Given a short code of between four and seven characters, this recovers
 the nearest matching full code to the specified location.
-Args:
-  code: A valid OLC character sequence.
-  referenceLatitude: The latitude (in signed decimal degrees) to use to
+
+# Arguments:
+- `code`: A valid OLC character sequence.
+- `latitude`: The latitude (in signed degrees) to use to
       find the nearest matching full code.
-  referenceLongitude: The longitude (in signed decimal degrees) to use
+- `longitude``: The longitude (in signed degrees) to use
       to find the nearest matching full code.
-Returns:
+
+# Returns:
   The nearest full Open Location Code to the reference location that matches
   the short code. If the passed code was not a valid short code, but was a
   valid full code, it is returned with proper capitalization but otherwise
@@ -449,21 +458,23 @@ This uses a reference location to determine how many initial characters
 can be removed from the OLC code. The number of characters that can be
 removed depends on the distance between the code center and the reference
 location.
+
 The minimum number of characters that will be removed is four. If more than
 four characters can be removed, the additional characters will be replaced
 with the padding character. At most eight characters will be removed.
 The reference location must be within 50% of the maximum range. This ensures
 that the shortened code will be able to be recovered using slightly different
 locations.
-Args:
-  code: A full, valid code to shorten.
-  latitude: A latitude, in signed decimal degrees, to use as the reference
-      point.
-  longitude: A longitude, in signed decimal degrees, to use as the reference
-      point.
-Returns:
+
+# Arguments
+
+- `code`: A full, valid code to shorten.
+- `latitude`: A latitude, in signed degrees, to use as the reference point.
+- `longitude`: A longitude, in signed degrees, to use as the reference point.
+
+# Returns:
   Either the original code, if the reference location was not close enough,
-  or the .
+  or the shortest code which can be used to recover from the reference location.
 """
 function shorten(code, latitude, longitude)
 
@@ -498,7 +509,7 @@ end
 
 Clip a latitude into the range -90 to 90.
 Args:
-  latitude: A latitude in signed decimal degrees.
+  latitude: A latitude in signed degrees.
 """
 function clipLatitude(latitude::Real)
     return min(LATITUDE_MAX_, max(-LATITUDE_MAX_, latitude))
@@ -528,7 +539,7 @@ end
 
 Normalize a longitude into the range -180 to 180, not including 180.
 Args:
-  longitude: A longitude in signed decimal degrees.
+  longitude: A longitude in signed degrees.
 """
 function normalizeLongitude(longitude::Real)
     while longitude < -LONGITUDE_MAX_
