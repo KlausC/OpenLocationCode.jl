@@ -149,3 +149,8 @@ DATA = [
     lat, long, codelength, code = d
     @test encode(lat, long, codelength) == code
 end
+
+@testset "encode args" begin
+    @test_throws ArgumentError encode(0, 0, 1)
+    @test_throws ArgumentError encode(0, 0, 9)
+end

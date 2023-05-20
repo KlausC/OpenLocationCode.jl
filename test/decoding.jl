@@ -35,3 +35,14 @@ DATA = [
     @test latitude_high(ca) ≈ lathi
     @test longitude_high(ca) ≈ longhi
 end
+
+@testset "validity" begin
+    @test  is_full("C2XXXXXX+")
+    @test !is_full("F2XXXXXX+")
+    @test  is_full("2VXXXXXX+")
+    @test !is_full("2WXXXXXX+")
+    @test_throws ArgumentError decode("XX+22")
+    @test_throws ArgumentError recover_nearest("X+", 0, 0)
+    @test_throws ArgumentError shorten("XX+22", 0, 0)
+    @test_throws ArgumentError shorten("22XX0000+", 0, 0)
+end
