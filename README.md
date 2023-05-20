@@ -1,6 +1,8 @@
 # OpenLocationCode
 
-[![Build Status](https://github.com/KlausC/OpenLocationCode.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/KlausC/OpenLocationCode.jl/actions/workflows/CI.yml?query=branch%3Amain)
+A package for Open Location Codes aka Plus Codes to represent geographical coordinates
+
+[![Build Status][gha-img]][gha-url]    [![Coverage Status][codecov-img]][codecov-url]
 
 ## Convert locations to and from short codes
 
@@ -69,3 +71,9 @@ in [google/open-location-code](https://github.com/google/open-location-code) v1.
 with this [specification](https://github.com/google/open-location-code/blob/main/docs/specification.md).
 
 © 2023 Klaus Crusius
+
+[gha-img]: https://github.com/KlausC/OpenLocationCode.jl/actions/workflows/CI.yml/badge.svg?branch=main
+[gha-url]: https://github.com/KlausC/OpenLocationCode.jl/actions/workflows/CI.yml?query=branch%3Amain
+
+[codecov-img]: https://codecov.io/gh/KlausC/OpenLocationCode.jl/branch/main/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/KlausC/OpenLocationCode.jl

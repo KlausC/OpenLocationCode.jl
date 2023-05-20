@@ -131,7 +131,7 @@ position up to the eighth digit.
 function is_valid(code::AbstractString)
 
     # The separator is required.
-    seps = findall(SEPARATOR_, code)
+    seps = first.(findall(SEPARATOR_ * "", code))
     length(seps) != 1 && return false
     sep = seps[begin]
     sep - 1 > SEPARATOR_POSITION_ && return false
@@ -141,7 +141,7 @@ function is_valid(code::AbstractString)
     sep % 2 == 0 && return false
     # We can have an even number of padding characters before the separator,
     # but then it must be the final character.
-    pads = findall(PADDING_CHARACTER_, code)
+    pads = first.(findall(PADDING_CHARACTER_ * "", code))
     if !isempty(pads)
         pad = pads[begin]
         # Short codes cannot have padding
