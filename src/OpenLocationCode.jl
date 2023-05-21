@@ -5,78 +5,78 @@ export CodeArea, latitude_low, longitude_low, latitude_high, longitude_high
 export latitude_center, longitude_center, latitude_precision, longitude_precision
 
 "A separator used to break the code into two parts to aid memorability."
-const SEPARATOR_ = '+'
+const SEPARATOR = '+'
 
 "The number of characters to place before the separator."
-const SEPARATOR_POSITION_ = 8
+const SEPARATOR_POSITION = 8
 
 # The character used to pad codes.
-const PADDING_CHARACTER_ = '0'
+const PADDING_CHARACTER = '0'
 
 # The character set used to encode the values.
-const CODE_ALPHABET_ = "23456789CFGHJMPQRVWX"
+const CODE_ALPHABET = "23456789CFGHJMPQRVWX"
 
 # The base to use to convert numbers to/from.
-const ENCODING_BASE_ = length(CODE_ALPHABET_) # 20
+const ENCODING_BASE = length(CODE_ALPHABET) # 20
 
 # The maximum value for latitude in degrees.
-const LATITUDE_MAX_ = 90
+const LATITUDE_MAX = 90
 
 # The maximum value for longitude in degrees.
-const LONGITUDE_MAX_ = 180
+const LONGITUDE_MAX = 180
 
 # The max number of digits to process in a plus code.
-const MAX_DIGIT_COUNT_ = 15
+const MAX_DIGIT_COUNT = 15
 
 """
 Maximum code length using lat/lng pair encoding. The area of such a
 code is approximately 13x13 meters (at the equator), and should be suitable
 for identifying buildings. This excludes prefix and separator characters.
 """
-const PAIR_CODE_LENGTH_ = 10
+const PAIR_CODE_LENGTH = 10
 
 # First place value of the pairs (if the last pair value is 1).
-const PAIR_FIRST_PLACE_VALUE_ = ENCODING_BASE_^(PAIR_CODE_LENGTH_ ÷ 2 - 1)
+const PAIR_FIRST_PLACE_VALUE = ENCODING_BASE^(PAIR_CODE_LENGTH ÷ 2 - 1)
 
 # Inverse of the precision of the pair section of the code.
-const PAIR_PRECISION_ = ENCODING_BASE_^3
+const PAIR_PRECISION = ENCODING_BASE^3
 
 # The resolution values in degrees for each position in the lat/lng pair
 # encoding. These give the place value of each position, and therefore the
 # dimensions of the resulting area.
-const PAIR_RESOLUTIONS_ = [20.0, 1.0, 0.05, 0.0025, 0.000125]
+const PAIR_RESOLUTIONS = [20.0, 1.0, 0.05, 0.0025, 0.000125]
 
 # Number of digits in the grid precision part of the code.
-const GRID_CODE_LENGTH_ = MAX_DIGIT_COUNT_ - PAIR_CODE_LENGTH_
+const GRID_CODE_LENGTH = MAX_DIGIT_COUNT - PAIR_CODE_LENGTH
 
 # Number of columns in the grid refinement method.
-const GRID_COLUMNS_ = 4
+const GRID_COLUMNS = 4
 
 # Number of rows in the grid refinement method.
-const GRID_ROWS_ = 5
+const GRID_ROWS = 5
 
 # First place value of the latitude grid (if the last place is 1).
-const GRID_LAT_FIRST_PLACE_VALUE_ = GRID_ROWS_^(GRID_CODE_LENGTH_ - 1)
+const GRID_LAT_FIRST_PLACE_VALUE = GRID_ROWS^(GRID_CODE_LENGTH - 1)
 
 # First place value of the longitude grid (if the last place is 1).
-const GRID_LNG_FIRST_PLACE_VALUE_ = GRID_COLUMNS_^(GRID_CODE_LENGTH_ - 1)
+const GRID_LNG_FIRST_PLACE_VALUE = GRID_COLUMNS^(GRID_CODE_LENGTH - 1)
 
 # inverse of best precision of grid part
-const GRID_LAT_PRECISION = GRID_LAT_FIRST_PLACE_VALUE_ * GRID_ROWS_
-const GRID_LNG_PRECISION = GRID_LNG_FIRST_PLACE_VALUE_ * GRID_COLUMNS_
+const GRID_LATPRECISION = GRID_LAT_FIRST_PLACE_VALUE * GRID_ROWS
+const GRID_LNGPRECISION = GRID_LNG_FIRST_PLACE_VALUE * GRID_COLUMNS
 
 # Multiply latitude by this much to make it a multiple of the finest
 # precision.
-const FINAL_LAT_PRECISION_ = PAIR_PRECISION_ * GRID_LAT_PRECISION
+const FINAL_LAT_PRECISION = PAIR_PRECISION * GRID_LATPRECISION
 
 # Multiply longitude by this much to make it a multiple of the finest
 # precision.
-const FINAL_LNG_PRECISION_ = PAIR_PRECISION_ * GRID_LNG_PRECISION
+const FINAL_LNG_PRECISION = PAIR_PRECISION * GRID_LNGPRECISION
 
 # Minimum length of a code that can be shortened.
-const MIN_TRIMMABLE_CODE_LEN_ = 6
+const MIN_TRIMMABLE_CODE_LEN = 6
 
-const GRID_SIZE_DEGREES_ = 0.000125
+const GRID_SIZE_DEGREES = 0.000125
 
 """
     CodeArea(latLo, longLo, codelength)
@@ -114,8 +114,8 @@ longitude_center(ca::CodeArea) = min_lon(ca, longitude_precision(ca) / 2)
 latitude_precision(ca::CodeArea) = latitude_precision(ca.codelength)
 longitude_precision(ca::CodeArea) = longitude_precision(ca.codelength)
 
-min_lat(ca, delta) = min(latitude_low(ca) + delta, LATITUDE_MAX_ )
-min_lon(ca, delta) = min(longitude_low(ca) + delta, LONGITUDE_MAX_)
+min_lat(ca, delta) = min(latitude_low(ca) + delta, LATITUDE_MAX )
+min_lon(ca, delta) = min(longitude_low(ca) + delta, LONGITUDE_MAX)
 
 function Base.isapprox(ca::CodeArea, cb::CodeArea)
     ca.codelength == cb.codelength && ca.latlo ≈ cb.latlo && ca.longlo ≈ cb.longlo
@@ -132,35 +132,35 @@ position up to the eighth digit.
 function is_valid(code::AbstractString)
 
     # The separator is required.
-    seps = first.(findall(SEPARATOR_ * "", code))
+    seps = first.(findall(SEPARATOR * "", code))
     length(seps) != 1 && return false
     sep = seps[begin]
-    sep - 1 > SEPARATOR_POSITION_ && return false
+    sep - 1 > SEPARATOR_POSITION && return false
     # Is it the only character?
     length(code) <= 1 && return false
     # Is it in an illegal position?
     sep % 2 == 0 && return false
     # We can have an even number of padding characters before the separator,
     # but then it must be the final character.
-    pads = first.(findall(PADDING_CHARACTER_ * "", code))
+    pads = first.(findall(PADDING_CHARACTER * "", code))
     if !isempty(pads)
         pad = pads[begin]
         # Short codes cannot have padding
-        sep < SEPARATOR_POSITION_ && return false
+        sep < SEPARATOR_POSITION && return false
         # Not allowed to start with them!
         pad == 1 && return false
 
         # There can only be one group and it must have even length.
         (length(pads) % 2 != 0 || pads[end] - pad + 1 != length(pads)) && return false
         # If the code is long enough to end with a separator, make sure it does.
-        return code[end] == SEPARATOR_
+        return code[end] == SEPARATOR
     end
     # If there are characters after the separator, make sure there isn't just
     # one of them (not legal).
     length(code) - sep == 1 && return false
     # Check the code contains only valid characters.
-    sepPad = SEPARATOR_ * PADDING_CHARACTER_
-    return all(ch -> uppercase(ch) in CODE_ALPHABET_ || ch in sepPad, code)
+    sepPad = SEPARATOR * PADDING_CHARACTER
+    return all(ch -> uppercase(ch) in CODE_ALPHABET || ch in sepPad, code)
 end
 
 """
@@ -175,8 +175,8 @@ function is_short(code::AbstractString)
     # Check it's valid.
     is_valid(code) || return false
     # If there are less characters than expected before the SEPARATOR.
-    sep = findfirst(SEPARATOR_, code)
-    return sep <= SEPARATOR_POSITION_
+    sep = findfirst(SEPARATOR, code)
+    return sep <= SEPARATOR_POSITION
 end
 
 """
@@ -194,14 +194,14 @@ function is_full(code::AbstractString)
     # If it's short, it's not full
     is_short(code) && return false
     # Work out what the first latitude character indicates for latitude.
-    firstLatValue = (findfirst(uppercase(code[1]), CODE_ALPHABET_) - 1) * ENCODING_BASE_
-    if firstLatValue >= LATITUDE_MAX_ * 2
+    firstLatValue = (findfirst(uppercase(code[1]), CODE_ALPHABET) - 1) * ENCODING_BASE
+    if firstLatValue >= LATITUDE_MAX * 2
         # The code would decode to a latitude of >= 90 degrees.
         return false
     end
     # Work out what the first longitude character indicates for longitude.
-    firstLngValue = (findfirst(uppercase(code[2]), CODE_ALPHABET_) - 1) * ENCODING_BASE_
-    if firstLngValue >= LONGITUDE_MAX_ * 2
+    firstLngValue = (findfirst(uppercase(code[2]), CODE_ALPHABET) - 1) * ENCODING_BASE
+    if firstLngValue >= LONGITUDE_MAX * 2
         # The code would decode to a longitude of >= 180 degrees.
         return false
     end
@@ -233,21 +233,21 @@ julia> encode(50.173168, 8.338086, 11)
 "9F2C58FQ+768"
 ```
 """
-function encode(latitude::Real, longitude::Real, codelength=PAIR_CODE_LENGTH_)
+function encode(latitude::Real, longitude::Real, codelength=PAIR_CODE_LENGTH)
     encode(float.(promote(latitude, longitude))..., codelength)
 end
 
-function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH_) where {T<:AbstractFloat}
-    if codelength < 2 || (codelength < PAIR_CODE_LENGTH_ && codelength % 2 == 1)
+function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH) where {T<:AbstractFloat}
+    if codelength < 2 || (codelength < PAIR_CODE_LENGTH && codelength % 2 == 1)
         throw(ArgumentError("Invalid Open Location Code length - $codelength"))
     end
-    codelength = min(codelength, MAX_DIGIT_COUNT_)
+    codelength = min(codelength, MAX_DIGIT_COUNT)
     # Ensure that latitude and longitude are valid.
     latitude = clipLatitude(latitude)
     longitude = normalizeLongitude(longitude)
     # Latitude 90 needs to be adjusted to be just less, so the returned code
     # can also be decoded.
-    if latitude == LATITUDE_MAX_
+    if latitude == LATITUDE_MAX
         latitude = latitude - latitude_precision(codelength)
     end
     code = ""
@@ -259,41 +259,41 @@ function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH_) wh
 
     # Multiply values by their precision and convert to positive.
     # Force to integers so the division operations will have integer results.
-    latVal = valpairgrid(latitude, FINAL_LAT_PRECISION_, LATITUDE_MAX_)
-    lngVal = valpairgrid(longitude, FINAL_LNG_PRECISION_, LONGITUDE_MAX_)
+    latVal = valpairgrid(latitude, FINAL_LAT_PRECISION, LATITUDE_MAX)
+    lngVal = valpairgrid(longitude, FINAL_LNG_PRECISION, LONGITUDE_MAX)
 
     # Compute the grid part of the code if necessary.
-    if codelength > PAIR_CODE_LENGTH_
-        for _ in 1:GRID_CODE_LENGTH_
-            latDigit = latVal % GRID_ROWS_
-            lngDigit = lngVal % GRID_COLUMNS_
-            ndx = latDigit * GRID_COLUMNS_ + lngDigit
-            code = CODE_ALPHABET_[ndx+1] * code
-            latVal ÷= GRID_ROWS_
-            lngVal ÷= GRID_COLUMNS_
+    if codelength > PAIR_CODE_LENGTH
+        for _ in 1:GRID_CODE_LENGTH
+            latDigit = latVal % GRID_ROWS
+            lngDigit = lngVal % GRID_COLUMNS
+            ndx = latDigit * GRID_COLUMNS + lngDigit
+            code = CODE_ALPHABET[ndx+1] * code
+            latVal ÷= GRID_ROWS
+            lngVal ÷= GRID_COLUMNS
         end
     else
-        latVal ÷= ^(GRID_ROWS_, GRID_CODE_LENGTH_)
-        lngVal ÷= ^(GRID_COLUMNS_, GRID_CODE_LENGTH_)
+        latVal ÷= ^(GRID_ROWS, GRID_CODE_LENGTH)
+        lngVal ÷= ^(GRID_COLUMNS, GRID_CODE_LENGTH)
     end
     # Compute the pair section of the code.
-    for _ in 1:PAIR_CODE_LENGTH_÷2
-        code = CODE_ALPHABET_[lngVal%ENCODING_BASE_+1] * code
-        code = CODE_ALPHABET_[latVal%ENCODING_BASE_+1] * code
-        latVal ÷= ENCODING_BASE_
-        lngVal ÷= ENCODING_BASE_
+    for _ in 1:PAIR_CODE_LENGTH÷2
+        code = CODE_ALPHABET[lngVal%ENCODING_BASE+1] * code
+        code = CODE_ALPHABET[latVal%ENCODING_BASE+1] * code
+        latVal ÷= ENCODING_BASE
+        lngVal ÷= ENCODING_BASE
     end
 
     # Add the separator character.
-    code = code[1:SEPARATOR_POSITION_] * SEPARATOR_ * code[SEPARATOR_POSITION_+1:end]
+    code = code[1:SEPARATOR_POSITION] * SEPARATOR * code[SEPARATOR_POSITION+1:end]
 
     # If we don't need to pad the code, return the requested section.
-    if codelength >= SEPARATOR_POSITION_
+    if codelength >= SEPARATOR_POSITION
         return code[1:codelength+1]
     end
 
     # Pad and return the code.
-    return code[1:codelength] * '0'^(SEPARATOR_POSITION_ - codelength) * SEPARATOR_
+    return code[1:codelength] * '0'^(SEPARATOR_POSITION - codelength) * SEPARATOR
 end
 
 """
@@ -327,62 +327,62 @@ function decode(code::AbstractString)
     # case and constrain to the maximum number of digits.
     m = match(r"([^0+]*)[0]*[+]?(.*)", code)
     code = uppercase(m[1] * m[2])
-    if length(code) > MAX_DIGIT_COUNT_
-        code = code[1:MAX_DIGIT_COUNT_]
+    if length(code) > MAX_DIGIT_COUNT
+        code = code[1:MAX_DIGIT_COUNT]
     end
     # Initialise the values for each section. We work them out as integers and
     # convert them to floats at the end.
-    normalLat = -LATITUDE_MAX_ * PAIR_PRECISION_
-    normalLng = -LONGITUDE_MAX_ * PAIR_PRECISION_
+    normalLat = -LATITUDE_MAX * PAIR_PRECISION
+    normalLng = -LONGITUDE_MAX * PAIR_PRECISION
     gridLat = 0
     gridLng = 0
     # How many digits do we have to process?
-    digits = min(length(code), PAIR_CODE_LENGTH_)
+    digits = min(length(code), PAIR_CODE_LENGTH)
     # Define the place value for the most significant pair.
-    pv = PAIR_FIRST_PLACE_VALUE_
+    pv = PAIR_FIRST_PLACE_VALUE
     # Decode the paired digits.
     for i in 1:2:digits
-        normalLat += (findfirst(code[i], CODE_ALPHABET_) - 1) * pv
-        normalLng += (findfirst(code[i+1], CODE_ALPHABET_) - 1) * pv
+        normalLat += (findfirst(code[i], CODE_ALPHABET) - 1) * pv
+        normalLng += (findfirst(code[i+1], CODE_ALPHABET) - 1) * pv
         if i < digits - 2
-            pv ÷= ENCODING_BASE_
+            pv ÷= ENCODING_BASE
         end
     end
     # Convert the place value to a float in degrees.
-    latPrecision = pv / PAIR_PRECISION_
-    lngPrecision = pv / PAIR_PRECISION_
+    latPrecision = pv / PAIR_PRECISION
+    lngPrecision = pv / PAIR_PRECISION
     # Process any extra precision digits.
-    if length(code) > PAIR_CODE_LENGTH_
+    if length(code) > PAIR_CODE_LENGTH
         # Initialise the place values for the grid.
-        rowpv = GRID_LAT_FIRST_PLACE_VALUE_
-        colpv = GRID_LNG_FIRST_PLACE_VALUE_
+        rowpv = GRID_LAT_FIRST_PLACE_VALUE
+        colpv = GRID_LNG_FIRST_PLACE_VALUE
         # How many digits do we have to process?
-        digits = min(length(code), MAX_DIGIT_COUNT_)
-        for i in PAIR_CODE_LENGTH_:digits-1
-            digitVal = findfirst(code[i+1], CODE_ALPHABET_) - 1
-            row = digitVal ÷ GRID_COLUMNS_
-            col = digitVal % GRID_COLUMNS_
+        digits = min(length(code), MAX_DIGIT_COUNT)
+        for i in PAIR_CODE_LENGTH:digits-1
+            digitVal = findfirst(code[i+1], CODE_ALPHABET) - 1
+            row = digitVal ÷ GRID_COLUMNS
+            col = digitVal % GRID_COLUMNS
             gridLat += row * rowpv
             gridLng += col * colpv
             if i < digits - 1
-                rowpv ÷= GRID_ROWS_
-                colpv ÷= GRID_COLUMNS_
+                rowpv ÷= GRID_ROWS
+                colpv ÷= GRID_COLUMNS
             end
         end
         # Adjust the precisions from the integer values to degrees.
-        latPrecision = rowpv / FINAL_LAT_PRECISION_
-        lngPrecision = colpv / FINAL_LNG_PRECISION_
+        latPrecision = rowpv / FINAL_LAT_PRECISION
+        lngPrecision = colpv / FINAL_LNG_PRECISION
     end
     # Merge the values from the normal and extra precision parts of the code.
-    lat = normalLat / PAIR_PRECISION_ + gridLat / FINAL_LAT_PRECISION_
-    lng = normalLng / PAIR_PRECISION_ + gridLng / FINAL_LNG_PRECISION_
+    lat = normalLat / PAIR_PRECISION + gridLat / FINAL_LAT_PRECISION
+    lng = normalLng / PAIR_PRECISION + gridLng / FINAL_LNG_PRECISION
     # Multiply values by 1e14, round and then divide. This reduces errors due
     # to floating point precision.
     digits = 14
     base = 10
     CodeArea(round(lat; digits, base),
         round(lng; digits, base),
-        min(length(code), MAX_DIGIT_COUNT_))
+        min(length(code), MAX_DIGIT_COUNT))
 end
 
 """
@@ -418,7 +418,7 @@ function recover_nearest(code::AbstractString, latitude::Real, longitude::Real)
     # Clean up the passed code.
     code = uppercase(code)
     # Compute the number of digits we need to recover.
-    paddingLength = SEPARATOR_POSITION_ - findfirst(SEPARATOR_, code) + 1
+    paddingLength = SEPARATOR_POSITION - findfirst(SEPARATOR, code) + 1
     # The resolution (height and width) of the padded area in degrees.
     resolution = compute_precision(paddingLength, 1)
     # Distance from the center to an edge (in degrees).
@@ -430,12 +430,12 @@ function recover_nearest(code::AbstractString, latitude::Real, longitude::Real)
     # within -90 to 90 degrees.
     latcenter = latitude_center(codeArea)
     if referenceLatitude + halfResolution < latcenter &&
-       latcenter - resolution >= -LATITUDE_MAX_
+       latcenter - resolution >= -LATITUDE_MAX
         # If the proposed code is more than half a cell north of the reference location,
         # it's too far, and the best match will be one cell south.
         latcenter -= resolution
     elseif referenceLatitude - halfResolution > latcenter &&
-           latcenter + resolution <= LATITUDE_MAX_
+           latcenter + resolution <= LATITUDE_MAX
         # If the proposed code is more than half a cell south of the reference location,
         # it's too far, and the best match will be one cell north.
         latcenter += resolution
@@ -481,7 +481,7 @@ function shorten(code, latitude, longitude)
     if !is_full(code)
         throw(ArgumentError("Passed code is not valid and full: $code"))
     end
-    if findfirst(PADDING_CHARACTER_, code) !== nothing
+    if findfirst(PADDING_CHARACTER, code) !== nothing
         throw(ArgumentError("Cannot shorten padded codes: $code"))
     end
     code = uppercase(code)
@@ -492,11 +492,11 @@ function shorten(code, latitude, longitude)
     # How close are the latitude and longitude to the code center.
     coderange = max(abs(latitude_center(codeArea) - latitude),
         abs(longitude_center(codeArea) - longitude))
-    for i in length(PAIR_RESOLUTIONS_)-2:-1:0
+    for i in length(PAIR_RESOLUTIONS)-2:-1:0
         # Check if we're close enough to shorten. The range must be less than 1/2
         # the resolution to shorten at all, and we want to allow some safety, so
         # use 0.3 instead of 0.5 as a multiplier.
-        if coderange < (PAIR_RESOLUTIONS_[i+1] * 0.3)
+        if coderange < (PAIR_RESOLUTIONS[i+1] * 0.3)
             # Trim it.
             return code[(i+1)*2+1:end]
         end
@@ -512,7 +512,7 @@ Args:
   latitude: A latitude in signed degrees.
 """
 function clipLatitude(latitude::Real)
-    return min(LATITUDE_MAX_, max(-LATITUDE_MAX_, latitude))
+    return min(LATITUDE_MAX, max(-LATITUDE_MAX, latitude))
 end
 
 """
@@ -523,14 +523,14 @@ Compute the latitude precision value for a given code length. Lengths <=
 have different precisions due to the grid method having fewer columns than
 rows.
 """
-latitude_precision(codelength) = compute_precision(codelength, GRID_ROWS_)
-longitude_precision(codelength) = compute_precision(codelength, GRID_COLUMNS_)
+latitude_precision(codelength) = compute_precision(codelength, GRID_ROWS)
+longitude_precision(codelength) = compute_precision(codelength, GRID_COLUMNS)
 
 function compute_precision(codelength, grid)
-    if codelength <= PAIR_CODE_LENGTH_
-        ENCODING_BASE_ / (ENCODING_BASE_^(codelength ÷ 2 - 1))
+    if codelength <= PAIR_CODE_LENGTH
+        ENCODING_BASE / (ENCODING_BASE^(codelength ÷ 2 - 1))
     else
-        1 / (ENCODING_BASE_^3 * grid^(codelength - PAIR_CODE_LENGTH_))
+        1 / (ENCODING_BASE^3 * grid^(codelength - PAIR_CODE_LENGTH))
     end
 end
 
@@ -542,11 +542,11 @@ Args:
   longitude: A longitude in signed degrees.
 """
 function normalizeLongitude(longitude::Real)
-    while longitude < -LONGITUDE_MAX_
-        longitude = longitude + LONGITUDE_MAX_ * 2
+    while longitude < -LONGITUDE_MAX
+        longitude = longitude + LONGITUDE_MAX * 2
     end
-    while longitude >= LONGITUDE_MAX_
-        longitude = longitude - LONGITUDE_MAX_ * 2
+    while longitude >= LONGITUDE_MAX
+        longitude = longitude - LONGITUDE_MAX * 2
     end
     return longitude
 end
