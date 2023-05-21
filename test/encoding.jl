@@ -143,6 +143,9 @@ DATA = [
 (59.99999999999998,-40.00000000000003,15, "98FXXXXX+XXXXXXX")
 # from the specification document
 (47.365562,8.524813,10,"8FVC9G8F+6W")
+# close to upper boundaries
+(prevfloat(50.0, 1),prevfloat(20.0, 1),4,"9G220000+")
+(prevfloat(50.0, 2),prevfloat(20.0, 2),4,"8FXX0000+")
 ]
 
 @testset "encoding $(d[3])-$(d[4])" for d in DATA

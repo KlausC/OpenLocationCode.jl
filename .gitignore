@@ -3,4 +3,5 @@ Manifest.toml
 *.mem
 *.cov
 lcov.info
+*.so
 

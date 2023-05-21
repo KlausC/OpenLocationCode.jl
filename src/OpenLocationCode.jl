@@ -302,7 +302,7 @@ end
 Return integer value in multiples of gridprecision
 """
 function valpairgrid(latlo::AbstractFloat, prec::Integer, max::Integer)
-    unsafe_trunc(Int64, floor(latlo * prec + 2.0^-23)) + Int64(prec) * max
+    unsafe_trunc(Int64, floor(nextfloat(latlo) * prec)) + Int64(prec) * max
 end
 
 """
