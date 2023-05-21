@@ -39,10 +39,16 @@ end
 @testset "validity" begin
     @test  is_full("C2XXXXXX+")
     @test !is_full("F2XXXXXX+")
-    @test  is_full("2VXXXXXX+")
+    @test  is_full("2VXXXX00+")
     @test !is_full("2WXXXXXX+")
+    @test !is_valid("+0022")
+    @test !is_valid("00+")
     @test_throws ArgumentError decode("XX+22")
     @test_throws ArgumentError recover_nearest("X+", 0, 0)
     @test_throws ArgumentError shorten("XX+22", 0, 0)
     @test_throws ArgumentError shorten("22XX0000+", 0, 0)
+end
+
+@testset "show CodeArea" begin
+    @test sprint(show, decode("9G000000+")) == "CodeArea(50.0+20.0, 20.0+20.0, 2)"
 end

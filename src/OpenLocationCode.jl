@@ -14,11 +14,10 @@ const SEPARATOR_POSITION = 8
 const PADDING_CHARACTER = '0'
 
 # The character set used to encode the values.
-const CODE_ALPHABET = "23456789CFGHJMPQRVWX"
-const CODE_DIGITS = [UInt8(c) for c in CODE_ALPHABET]
+const CODE_DIGITS = [UInt8(c) for c in "23456789CFGHJMPQRVWX"]
 
 # The base to use to convert numbers to/from.
-const ENCODING_BASE = length(CODE_ALPHABET) # 20
+const ENCODING_BASE = length(CODE_DIGITS) # 20
 
 # The maximum value for latitude in degrees.
 const LATITUDE_MAX = 90
@@ -122,6 +121,13 @@ function Base.isapprox(ca::CodeArea, cb::CodeArea)
     ca.codelength == cb.codelength && ca.latlo ≈ cb.latlo && ca.longlo ≈ cb.longlo
 end
 
+function Base.show(io::IO, ca::CodeArea)
+    print(io, "CodeArea(")
+    print(io, latitude_low(ca), "+", latitude_precision(ca), ", ")
+    print(io, longitude_low(ca), "+", longitude_precision(ca), ", ")
+    print(io, ca.codelength, ")")
+end
+
 """
     is_valid(code::AbstractString)
 
@@ -195,13 +201,15 @@ function is_full(code::AbstractString)
     # If it's short, it's not full
     is_short(code) && return false
     # Work out what the first latitude character indicates for latitude.
-    firstLatValue = (findfirst(==(UInt8(uppercase(code[1]))), CODE_DIGITS) - 1) * ENCODING_BASE
+    clat = UInt8(uppercase(code[1]))
+    firstLatValue = (findfirst(==(clat), CODE_DIGITS) - 1) * ENCODING_BASE
     if firstLatValue >= LATITUDE_MAX * 2
         # The code would decode to a latitude of >= 90 degrees.
         return false
     end
     # Work out what the first longitude character indicates for longitude.
-    firstLngValue = (findfirst(==(UInt8(uppercase(code[2]))), CODE_DIGITS) - 1) * ENCODING_BASE
+    clng = UInt8(uppercase(code[2]))
+    firstLngValue = (findfirst(==(clng), CODE_DIGITS) - 1) * ENCODING_BASE
     if firstLngValue >= LONGITUDE_MAX * 2
         # The code would decode to a longitude of >= 180 degrees.
         return false
@@ -303,9 +311,9 @@ function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH) whe
 end
 
 """
-    valpairgrid(lat, gridprecision)
+    valpairgrid(lat, precision, max)
 
-Return integer value in multiples of gridprecision
+Return integer value in multiples of `1/precision`
 """
 function valpairgrid(latlo::AbstractFloat, prec::Integer, max::Integer)
     unsafe_trunc(Int64, floor(nextfloat(latlo) * prec)) + Int64(prec) * max
@@ -510,17 +518,6 @@ function shorten(code, latitude, longitude)
 end
 
 """
-    clipLatitude(latitude)
-
-Clip a latitude into the range -90 to 90.
-Args:
-  latitude: A latitude in signed degrees.
-"""
-function clipLatitude(latitude::Real)
-    return min(LATITUDE_MAX, max(-LATITUDE_MAX, latitude))
-end
-
-"""
     computeLatitudePrecision(codelength)
 
 Compute the latitude precision value for a given code length. Lengths <=
@@ -537,6 +534,17 @@ function compute_precision(codelength, grid)
     else
         1 / (ENCODING_BASE^3 * grid^(codelength - PAIR_CODE_LENGTH))
     end
+end
+
+"""
+    clipLatitude(latitude)
+
+Clip a latitude into the range -90 to 90.
+Args:
+  latitude: A latitude in signed degrees.
+"""
+function clipLatitude(latitude::Real)
+    return min(LATITUDE_MAX, max(-LATITUDE_MAX, latitude))
 end
 
 """
