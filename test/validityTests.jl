@@ -30,6 +30,9 @@ DATA = [
 ("849VGJQF+VX7QR3U",false,false,false)
 ("849VGJQF+VX7QR3JW",true,false,true)
 ("849VGJQF+VX7QR3JU",false,false,false)
+("62H00002+",false,false,false)
+("620AA000+",false,false,false)
+("+",false,false,false)
 ]
 
 @testset "validity $(d[1])" for d in DATA

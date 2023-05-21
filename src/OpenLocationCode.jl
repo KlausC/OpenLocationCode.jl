@@ -15,6 +15,7 @@ const PADDING_CHARACTER = '0'
 
 # The character set used to encode the values.
 const CODE_ALPHABET = "23456789CFGHJMPQRVWX"
+const CODE_DIGITS = [UInt8(c) for c in CODE_ALPHABET]
 
 # The base to use to convert numbers to/from.
 const ENCODING_BASE = length(CODE_ALPHABET) # 20
@@ -131,27 +132,28 @@ position up to the eighth digit.
 """
 function is_valid(code::AbstractString)
 
-    # The separator is required.
-    seps = first.(findall(SEPARATOR * "", code))
-    length(seps) != 1 && return false
-    sep = seps[begin]
-    sep - 1 > SEPARATOR_POSITION && return false
+    # The separator is required exactly once.
+    sep = findfirst(SEPARATOR, code)
+    sep !== nothing && findlast(SEPARATOR, code) == sep || return false
+    # Not more than 8 characters before separator.
+    sep > SEPARATOR_POSITION + 1 && return false
     # Is it the only character?
     length(code) <= 1 && return false
     # Is it in an illegal position?
     sep % 2 == 0 && return false
     # We can have an even number of padding characters before the separator,
     # but then it must be the final character.
-    pads = first.(findall(PADDING_CHARACTER * "", code))
-    if !isempty(pads)
-        pad = pads[begin]
+    pad = findfirst(PADDING_CHARACTER, code)
+    if pad !== nothing
         # Short codes cannot have padding
         sep < SEPARATOR_POSITION && return false
-        # Not allowed to start with them!
-        pad == 1 && return false
+        # Not allowed to start with them or start at even poaition
+        pad == 1 || iseven(pad) && return false
 
         # There can only be one group and it must have even length.
-        (length(pads) % 2 != 0 || pads[end] - pad + 1 != length(pads)) && return false
+        pad2 = findlast(PADDING_CHARACTER, code)
+        (pad2 - pad) % 2 == 0 && return false
+        all(isequal(PADDING_CHARACTER), view(code, pad:pad2)) || return false
         # If the code is long enough to end with a separator, make sure it does.
         return code[end] == SEPARATOR
     end
@@ -159,8 +161,7 @@ function is_valid(code::AbstractString)
     # one of them (not legal).
     length(code) - sep == 1 && return false
     # Check the code contains only valid characters.
-    sepPad = SEPARATOR * PADDING_CHARACTER
-    return all(ch -> uppercase(ch) in CODE_ALPHABET || ch in sepPad, code)
+    return all(ch -> UInt8(uppercase(ch)) in CODE_DIGITS || ch == SEPARATOR || ch == PADDING_CHARACTER, code)
 end
 
 """
@@ -194,13 +195,13 @@ function is_full(code::AbstractString)
     # If it's short, it's not full
     is_short(code) && return false
     # Work out what the first latitude character indicates for latitude.
-    firstLatValue = (findfirst(uppercase(code[1]), CODE_ALPHABET) - 1) * ENCODING_BASE
+    firstLatValue = (findfirst(==(UInt8(uppercase(code[1]))), CODE_DIGITS) - 1) * ENCODING_BASE
     if firstLatValue >= LATITUDE_MAX * 2
         # The code would decode to a latitude of >= 90 degrees.
         return false
     end
     # Work out what the first longitude character indicates for longitude.
-    firstLngValue = (findfirst(uppercase(code[2]), CODE_ALPHABET) - 1) * ENCODING_BASE
+    firstLngValue = (findfirst(==(UInt8(uppercase(code[2]))), CODE_DIGITS) - 1) * ENCODING_BASE
     if firstLngValue >= LONGITUDE_MAX * 2
         # The code would decode to a longitude of >= 180 degrees.
         return false
@@ -250,7 +251,7 @@ function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH) whe
     if latitude == LATITUDE_MAX
         latitude = latitude - latitude_precision(codelength)
     end
-    code = ""
+    bcode = UInt8[]
 
     # Compute the code.
     # This approach converts each value to an integer after multiplying it by
@@ -268,7 +269,7 @@ function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH) whe
             latDigit = latVal % GRID_ROWS
             lngDigit = lngVal % GRID_COLUMNS
             ndx = latDigit * GRID_COLUMNS + lngDigit
-            code = CODE_ALPHABET[ndx+1] * code
+            push!(bcode, CODE_DIGITS[ndx+1])
             latVal ÷= GRID_ROWS
             lngVal ÷= GRID_COLUMNS
         end
@@ -278,22 +279,27 @@ function encode(latitude::T, longitude::T, codelength::Int=PAIR_CODE_LENGTH) whe
     end
     # Compute the pair section of the code.
     for _ in 1:PAIR_CODE_LENGTH÷2
-        code = CODE_ALPHABET[lngVal%ENCODING_BASE+1] * code
-        code = CODE_ALPHABET[latVal%ENCODING_BASE+1] * code
+        push!(bcode, CODE_DIGITS[lngVal%ENCODING_BASE+1])
+        push!(bcode, CODE_DIGITS[latVal%ENCODING_BASE+1])
         latVal ÷= ENCODING_BASE
         lngVal ÷= ENCODING_BASE
     end
 
-    # Add the separator character.
-    code = code[1:SEPARATOR_POSITION] * SEPARATOR * code[SEPARATOR_POSITION+1:end]
-
+    reverse!(bcode)
     # If we don't need to pad the code, return the requested section.
     if codelength >= SEPARATOR_POSITION
-        return code[1:codelength+1]
+        resize!(bcode, codelength)
+        insert!(bcode, SEPARATOR_POSITION + 1, SEPARATOR)
+        return String(bcode)
     end
 
     # Pad and return the code.
-    return code[1:codelength] * '0'^(SEPARATOR_POSITION - codelength) * SEPARATOR
+    resize!(bcode, codelength)
+    for i = codelength+1:SEPARATOR_POSITION
+        push!(bcode, PADDING_CHARACTER)
+    end
+    push!(bcode, SEPARATOR)
+    return String(bcode)
 end
 
 """
@@ -325,11 +331,16 @@ function decode(code::AbstractString)
     # Strip out separator character (we've already established the code is
     # valid so the maximum is one), and padding characters. Convert to upper
     # case and constrain to the maximum number of digits.
-    m = match(r"([^0+]*)[0]*[+]?(.*)", code)
-    code = uppercase(m[1] * m[2])
-    if length(code) > MAX_DIGIT_COUNT
-        code = code[1:MAX_DIGIT_COUNT]
+    bcode = UInt8[]
+    for c in code
+        c == PADDING_CHARACTER && break
+        c == SEPARATOR && continue
+        push!(bcode, uppercase(c))
     end
+    if length(bcode) > MAX_DIGIT_COUNT
+        resize!(bcode, MAX_DIGIT_COUNT)
+    end
+    codelength = length(bcode)
     # Initialise the values for each section. We work them out as integers and
     # convert them to floats at the end.
     normalLat = -LATITUDE_MAX * PAIR_PRECISION
@@ -337,13 +348,13 @@ function decode(code::AbstractString)
     gridLat = 0
     gridLng = 0
     # How many digits do we have to process?
-    digits = min(length(code), PAIR_CODE_LENGTH)
+    digits = min(codelength, PAIR_CODE_LENGTH)
     # Define the place value for the most significant pair.
     pv = PAIR_FIRST_PLACE_VALUE
     # Decode the paired digits.
     for i in 1:2:digits
-        normalLat += (findfirst(code[i], CODE_ALPHABET) - 1) * pv
-        normalLng += (findfirst(code[i+1], CODE_ALPHABET) - 1) * pv
+        normalLat += (findfirst(==(bcode[i]), CODE_DIGITS) - 1) * pv
+        normalLng += (findfirst(==(bcode[i+1]), CODE_DIGITS) - 1) * pv
         if i < digits - 2
             pv ÷= ENCODING_BASE
         end
@@ -352,14 +363,14 @@ function decode(code::AbstractString)
     latPrecision = pv / PAIR_PRECISION
     lngPrecision = pv / PAIR_PRECISION
     # Process any extra precision digits.
-    if length(code) > PAIR_CODE_LENGTH
+    if codelength > PAIR_CODE_LENGTH
         # Initialise the place values for the grid.
         rowpv = GRID_LAT_FIRST_PLACE_VALUE
         colpv = GRID_LNG_FIRST_PLACE_VALUE
         # How many digits do we have to process?
-        digits = min(length(code), MAX_DIGIT_COUNT)
+        digits = min(codelength, MAX_DIGIT_COUNT)
         for i in PAIR_CODE_LENGTH:digits-1
-            digitVal = findfirst(code[i+1], CODE_ALPHABET) - 1
+            digitVal = findfirst(==(bcode[i+1]), CODE_DIGITS) - 1
             row = digitVal ÷ GRID_COLUMNS
             col = digitVal % GRID_COLUMNS
             gridLat += row * rowpv
@@ -376,13 +387,7 @@ function decode(code::AbstractString)
     # Merge the values from the normal and extra precision parts of the code.
     lat = normalLat / PAIR_PRECISION + gridLat / FINAL_LAT_PRECISION
     lng = normalLng / PAIR_PRECISION + gridLng / FINAL_LNG_PRECISION
-    # Multiply values by 1e14, round and then divide. This reduces errors due
-    # to floating point precision.
-    digits = 14
-    base = 10
-    CodeArea(round(lat; digits, base),
-        round(lng; digits, base),
-        min(length(code), MAX_DIGIT_COUNT))
+    CodeArea(lat, lng, codelength)
 end
 
 """
