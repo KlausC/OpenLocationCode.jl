@@ -6,4 +6,5 @@ using Test
     @testset "decode" begin include("decoding.jl") end
     @testset "encode" begin include("encoding.jl") end
     @testset "shorten" begin include("shortCodeTests.jl") end
+    @testset "geometric" begin include("geometric.jl") end
 end

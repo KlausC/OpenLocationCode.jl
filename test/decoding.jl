@@ -50,5 +50,7 @@ end
 end
 
 @testset "show CodeArea" begin
-    @test sprint(show, decode("9G000000+")) == "CodeArea(50.0+20.0, 20.0+20.0, 2)"
+    ca = decode("9G000000+")
+    @test latlong(ca) == (60.0, 30.0)
+    @test sprint(show, ca) == "CodeArea(50.0+20.0, 20.0+20.0, 2)"
 end

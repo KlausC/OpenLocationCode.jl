@@ -3,6 +3,7 @@ module OpenLocationCode
 export is_valid, is_short, is_full, encode, decode, recover_nearest, shorten
 export CodeArea, latitude_low, longitude_low, latitude_high, longitude_high
 export latitude_center, longitude_center, latitude_precision, longitude_precision
+export latlong
 
 "A separator used to break the code into two parts to aid memorability."
 const SEPARATOR = '+'
@@ -419,17 +420,16 @@ the nearest matching full code to the specified location.
   unchanged.
 """
 function recover_nearest(code::AbstractString, latitude::Real, longitude::Real)
-
+    # Clean up the passed code.
+    code = uppercase(code)
     # if code is a valid full code, return it properly capitalized
-    is_full(code) && return uppercase(code)
+    is_full(code) && return code
     if !is_short(code)
         throw(ArgumentError("Passed short code is not valid - $code"))
     end
     # Ensure that latitude and longitude are valid.
     referenceLatitude = clipLatitude(latitude)
     referenceLongitude = normalizeLongitude(longitude)
-    # Clean up the passed code.
-    code = uppercase(code)
     # Compute the number of digits we need to recover.
     paddingLength = SEPARATOR_POSITION - findfirst(SEPARATOR, code) + 1
     # The resolution (height and width) of the padded area in degrees.
@@ -437,7 +437,8 @@ function recover_nearest(code::AbstractString, latitude::Real, longitude::Real)
     # Distance from the center to an edge (in degrees).
     halfResolution = resolution / 2
     # Use the reference location to pad the supplied short code and decode it.
-    codeArea = decode(encode(referenceLatitude, referenceLongitude)[1:paddingLength] * code)
+    refcode = encode(referenceLatitude, referenceLongitude, paddingLength)
+    codeArea = decode(view(refcode, 1:paddingLength) * code)
     # How many degrees latitude is the code from the reference? If it is more
     # than half the resolution, we need to move it north or south but keep it
     # within -90 to 90 degrees.
@@ -564,4 +565,6 @@ function normalizeLongitude(longitude::Real)
     return longitude
 end
 
-end
+include("geometric.jl")
+
+end # module
