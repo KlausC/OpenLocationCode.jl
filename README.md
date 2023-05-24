@@ -118,16 +118,22 @@ julia> # Encode a location, default accuracy:
        encode(47.365590, 8.524997)
 "8FVC9G8F+6X"
 
+julia> ca = CodeArea(47.365590, 8.524997, 6)
+CodeArea("8FVC9G00+", 47.36559+0.05, 8.524997+0.05, 6)
+
 julia> # Encode a location using five digits of additional refinement:
        encode(47.365590, 8.524997, 15)
 "8FVC9G8F+6XQQ435"
 
 julia> # Decode a full code:
-       code = "8FVCCJ8F+6X"
+       code  
 "8FVCCJ8F+6X"
 
+julia> ca = CodeArea(code)
+CodeArea("8FVCCJ8F+6X", 47.4155+0.000125, 8.624875+0.000125, 10)
+
 julia> ca = decode(code)
-CodeArea{Float64}(47.4155, 8.624875, 10)
+CodeArea("8FVCCJ8F+6X", 47.4155+0.000125, 8.624875+0.000125, 10)
 
 julia> println("# Center is lat=$(latitude_center(ca)), lon=$(longitude_center(ca))")
 # Center is lat=47.4155625, lon=8.6249375
@@ -145,6 +151,16 @@ julia> # Recover the full code from a short code:
 
 julia> recover_nearest("8F+6X", 47.4, 8.6)
 "8FVCCJ8F+6X"
+
+julia> area(ca) # area  in m^2
+131.03201149353194
+
+julia> distance(ca, CodeArea("8FVC0000+")) # distance in meters
+13296.381156694346
+
+julia> latlong(CodeArea("9F000000+")) # center coordinates
+(60.0, 10.0)
+
 ```
 
 © 2023 Klaus Crusius
