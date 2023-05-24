@@ -96,14 +96,19 @@ Attributes:
   code_length: The number of significant characters that were in the code.
 """
 struct CodeArea{T<:Real}
+    code::String
     latlo::T
     longlo::T
     codelength::Int
+end
 
-    function CodeArea(latlo, longlo, codelength)
-        latlo, longlo = promote(latlo, longlo)
-        new{typeof(latlo)}(latlo, longlo, codelength)
-    end
+function CodeArea(latlo, longlo, codelength=PAIR_CODE_LENGTH)
+    latlo, longlo = promote(latlo, longlo)
+    CodeArea{typeof(latlo)}(encode(latlo, longlo, codelength), latlo, longlo, codelength)
+end
+function CodeArea(code::AbstractString)
+    lat, lon, len = _decode(code)
+    CodeArea{typeof(lat)}(normcode(code), lat, lon, len)
 end
 
 latitude_low(ca::CodeArea) = ca.latlo
@@ -114,16 +119,30 @@ latitude_center(ca::CodeArea) = min_lat(ca, latitude_precision(ca) / 2)
 longitude_center(ca::CodeArea) = min_lon(ca, longitude_precision(ca) / 2)
 latitude_precision(ca::CodeArea) = latitude_precision(ca.codelength)
 longitude_precision(ca::CodeArea) = longitude_precision(ca.codelength)
+plus_code(ca::CodeArea) = ca.code
+latlong(ca::CodeArea) = latitude_center(ca), longitude_center(ca)
 
+normcode(code) = length(code) > MAX_DIGIT_COUNT + 1 ? code[1:MAX_DIGIT_COUNT+1] : code
 min_lat(ca, delta) = min(latitude_low(ca) + delta, LATITUDE_MAX )
 min_lon(ca, delta) = min(longitude_low(ca) + delta, LONGITUDE_MAX)
 
+import Base: ==
+function ==(ca::CodeArea, cb::CodeArea)
+    ca.code == cb.code &&
+    ca.codelength == cb.codelength &&
+    ca.latlo == cb.latlo &&
+    ca.longlo == cb.longlo
+end
+
 function Base.isapprox(ca::CodeArea, cb::CodeArea)
-    ca.codelength == cb.codelength && ca.latlo ≈ cb.latlo && ca.longlo ≈ cb.longlo
+    ca.code == cb.code &&
+    ca.codelength == cb.codelength &&
+    ca.latlo ≈ cb.latlo &&
+    ca.longlo ≈ cb.longlo
 end
 
 function Base.show(io::IO, ca::CodeArea)
-    print(io, "CodeArea(")
+    print(io, "CodeArea(\"", plus_code(ca),"\", ")
     print(io, latitude_low(ca), "+", latitude_precision(ca), ", ")
     print(io, longitude_low(ca), "+", longitude_precision(ca), ", ")
     print(io, ca.codelength, ")")
@@ -332,7 +351,8 @@ Decode an Open Location Code into the location coordinates.
   A `CodeArea` object that provides the latitude and longitude of two of the
   corners of the area, the center, and the length of the original code.
 """
-function decode(code::AbstractString)
+decode(code::AbstractString) = CodeArea(normcode(code), _decode(code)...)
+function _decode(code::AbstractString)
 
     if !is_full(code)
         throw(ArgumentError("Passed Open Location Code is not a valid full code - $code"))
@@ -396,7 +416,7 @@ function decode(code::AbstractString)
     # Merge the values from the normal and extra precision parts of the code.
     lat = normalLat / PAIR_PRECISION + gridLat / FINAL_LAT_PRECISION
     lng = normalLng / PAIR_PRECISION + gridLng / FINAL_LNG_PRECISION
-    CodeArea(lat, lng, codelength)
+    lat, lng, codelength
 end
 
 """
@@ -517,6 +537,8 @@ function shorten(code, latitude, longitude)
     end
     return code
 end
+
+shorten(ca::CodeArea, lat, lon) = shorten(plus_code(ca), lat, lon)
 
 """
     computeLatitudePrecision(codelength)

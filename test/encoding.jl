@@ -156,4 +156,6 @@ end
 @testset "encode args" begin
     @test_throws ArgumentError encode(0, 0, 1)
     @test_throws ArgumentError encode(0, 0, 9)
+    @test encode(50, 8) == encode(50, 8, 10)
+    @test CodeArea(50, 8) == CodeArea(50, 8, 10)
 end

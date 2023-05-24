@@ -54,3 +54,9 @@ end
         @test recover_nearest(short, lat, long) == code
     end
 end
+
+@testset "shorten from CodeArea" begin
+    code = "23XXXXXX+"
+    lat, lon = -70, -140
+    @test shorten(code, lat, lon) == shorten(CodeArea(code), lat, lon)
+end

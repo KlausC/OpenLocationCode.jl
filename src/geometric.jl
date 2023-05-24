@@ -42,5 +42,3 @@ function area(ca::CodeArea)
 end
 
 area(ca::AbstractString) = area(decode(ca))
-
-latlong(ca::CodeArea) = latitude_center(ca), longitude_center(ca)

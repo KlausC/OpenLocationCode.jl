@@ -49,8 +49,11 @@ end
     @test_throws ArgumentError shorten("22XX0000+", 0, 0)
 end
 
-@testset "show CodeArea" begin
-    ca = decode("9G000000+")
+@testset "show and convert CodeArea" begin
+    code = "9G000000+"
+    ca = decode(code)
     @test latlong(ca) == (60.0, 30.0)
-    @test sprint(show, ca) == "CodeArea(50.0+20.0, 20.0+20.0, 2)"
+    @test sprint(show, ca) == "CodeArea(\"$code\", 50.0+20.0, 20.0+20.0, 2)"
+    @test CodeArea(code) == ca
+    @test CodeArea(50, 20, 2) == ca
 end
