@@ -1,7 +1,7 @@
 name = "OpenLocationCode"
 uuid = "756832fe-a726-4697-a3e3-9d94f93caec2"
 authors = ["KlausC <klausC@users.noreply.github.com> and contributors"]
-version = "1.0.0"
+version = "1.0.1"
 
 [compat]
 julia = "1.6"
